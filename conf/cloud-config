@@ -43,11 +43,12 @@ write_files:
     Description=Squanch jmx-config service
 
     [Service]
+    ExecStartPre=/bin/bash -c "/usr/bin/systemctl set-environment JOB_ID=$(curl -s 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/job-id' -H 'Metadata-Flavor: Google')"
     ExecStart=/usr/bin/docker run \
                                   --net=host \
                                   --rm \
                                   --name=squanch-jmx-config \
-                                  --env=JOB_ID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/job-id" -H "Metadata-Flavor: Google") \
+                                  --env=JOB_ID=$JOB_ID \
                                   --volume jmx-etc-config:/etc/jmxtrans \
                                   ravwojdyla/squanch:latest
     ExecStop=/usr/bin/docker stop squanch-jmx-config
