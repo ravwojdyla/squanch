@@ -26,11 +26,14 @@ write_files:
     Description=Squanch grafana service
 
     [Service]
+    ExecStartPre=/usr/bin/docker pull grafana/grafana:latest
     ExecStart=/usr/bin/docker run \
                                   --net=host \
                                   --rm \
                                   --name=squanch-grafana \
                                   grafana/grafana:latest
+    ExecStartPost=/bin/sleep 5
+    ExecStartPost=/usr/bin/curl 'http://admin:admin@localhost:3000/api/datasources' -X POST -H 'Content-Type: application/json;charset=UTF-8' --data-binary '{"name":"graphite","type":"graphite","url":"http://localhost:80","access":"proxy","isDefault":true}'
     ExecStop=/usr/bin/docker stop squanch-grafana
     ExecStopPost=/usr/bin/docker rm squanch-grafana
     Restart=always
@@ -48,7 +51,7 @@ write_files:
                                   --net=host \
                                   --rm \
                                   --name=squanch-jmx-config \
-                                  --env=JOB_ID=$JOB_ID \
+                                  --env=JOB_ID=${JOB_ID} \
                                   --volume jmx-etc-config:/etc/jmxtrans \
                                   ravwojdyla/squanch:latest
     ExecStop=/usr/bin/docker stop squanch-jmx-config
