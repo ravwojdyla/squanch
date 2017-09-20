@@ -1,0 +1,60 @@
+# Host/Port Grahpite listens on
+graphite_host: "${JMXTRANS_GRAPHITE_HOST}"
+graphite_port: "${JMXTRANS_GRAPHITE_PORT}"
+
+# workers have JMX open on 5555
+query_port: "5555"
+# space for host alias will force to use hostnames
+global_host_alias: " /dataflow"
+
+queries:
+    - name: memory
+      obj: "java.lang:type=Memory"
+      resultAlias: "memory"
+      attr:
+        - "HeapMemoryUsage"
+        - "NonHeapMemoryUsage"
+    - name: mempool
+      obj: "java.lang:type=MemoryPool,name=*"
+      resultAlias: "memorypool"
+      attr:
+        - "Usage"
+    - name: gc
+      obj: "java.lang:type=GarbageCollector,name=*"
+      resultAlias: "gc"
+      attr:
+        - "CollectionCount"
+        - "CollectionTime"
+    - name: sys
+      obj: "java.lang:type=OperatingSystem"
+      resultAlias: "sys"
+      attr:
+        - "AvailableProcessors"
+        - "CommittedVirtualMemorySize"
+        - "FreePhysicalMemorySize"
+        - "FreeSwapSpaceSize"
+        - "MaxFileDescriptorCount"
+        - "OpenFileDescriptorCount"
+        - "ProcessCpuLoad"
+        - "ProcessCpuTime"
+        - "SystemCpuLoad"
+        - "SystemLoadAverage"
+        - "TotalPhysicalMemorySize"
+        - "TotalSwapSpaceSize"
+    - name: threads
+      obj : "java.lang:type=Threading"
+      resultAlias: "threads"
+      attr:
+        - "DaemonThreadCount"
+        - "PeakThreadCount"
+        - "ThreadCount"
+        - "TotalStartedThreadCount"
+sets:
+  - setname: dataflow-workers
+    query_names:
+            - memory
+            - mempool
+            - gc
+            - sys
+            - threads
+    hosts:

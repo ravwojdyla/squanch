@@ -1,0 +1,82 @@
+#cloud-config
+
+write_files:
+- path: /etc/systemd/system/squanch-graphite.service
+  permissions: 0644
+  owner: root
+  content: |
+    [Unit]
+    Description=Squanch graphite service
+
+    [Service]
+    ExecStart=/usr/bin/docker run \
+                                  --net=host \
+                                  --rm \
+                                  --name=squanch-graphite \
+                                  nickstenning/graphite:latest
+    ExecStop=/usr/bin/docker stop squanch-graphite
+    ExecStopPost=/usr/bin/docker rm squanch-graphite
+    Restart=always
+    TimeoutSec=30m
+- path: /etc/systemd/system/squanch-grafana.service
+  permissions: 0644
+  owner: root
+  content: |
+    [Unit]
+    Description=Squanch grafana service
+
+    [Service]
+    ExecStart=/usr/bin/docker run \
+                                  --net=host \
+                                  --rm \
+                                  --name=squanch-grafana \
+                                  grafana/grafana:latest
+    ExecStop=/usr/bin/docker stop squanch-grafana
+    ExecStopPost=/usr/bin/docker rm squanch-grafana
+    Restart=always
+    TimeoutSec=30m
+- path: /etc/systemd/system/squanch-jmx-config.service
+  permissions: 0644
+  owner: root
+  content: |
+    [Unit]
+    Description=Squanch jmx-config service
+
+    [Service]
+    ExecStart=/usr/bin/docker run \
+                                  --net=host \
+                                  --rm \
+                                  --name=squanch-jmx-config \
+                                  --env=JOB_ID=$(curl -s "http://metadata.google.internal/computeMetadata/v1/instance/attributes/job-id" -H "Metadata-Flavor: Google") \
+                                  --volume jmx-etc-config:/etc/jmxtrans \
+                                  ravwojdyla/squanch:latest
+    ExecStop=/usr/bin/docker stop squanch-jmx-config
+    ExecStopPost=/usr/bin/docker rm squanch-jmx-config
+    Restart=always
+    TimeoutSec=30m
+- path: /etc/systemd/system/squanch-jmxtrans.service
+  permissions: 0644
+  owner: root
+  content: |
+    [Unit]
+    Description=Squanch jmxtrans service
+
+    [Service]
+    ExecStart=/usr/bin/docker run \
+                                  --net=host \
+                                  --rm \
+                                  --name=squanch-jmxtrans \
+                                  --volumes-from=squanch-jmx-config:ro \
+                                  ravwojdyla/jmxtrans-docker:latest
+    ExecStop=/usr/bin/docker stop squanch-jmxtrans
+    ExecStopPost=/usr/bin/docker rm squanch-jmxtrans
+    Restart=always
+    TimeoutSec=30m
+    RestartSec=1m
+
+runcmd:
+- systemctl daemon-reload
+- systemctl start squanch-graphite.service
+- systemctl start squanch-grafana.service
+- systemctl start squanch-jmx-config.service
+- systemctl start squanch-jmxtrans.service
