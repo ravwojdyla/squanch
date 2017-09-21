@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+set -o nounset
+set -o errexit
+set -o pipefail
+
+DIR_OF_SCRIPT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+function print_color {
+  local msg=${1?}
+  local kind=${2:-GREEN}
+  case "$kind" in
+    RED)
+      echo -e "$(tput setaf 1) $msg $(tput setaf 7)" >&2 ;;
+    *)
+      echo -e "$(tput setaf 2) $msg $(tput setaf 7)" ;;
+  esac
+}
+
+function fatal_error {
+  local msg=${1?"log message for fatal error not set"}
+  print_color "$msg" RED
+  exit 1
+}
+
+function help {
+  fatal_error "invalid command, use: $0 <create|delete> <job-id> \n\
+ example: $0 create 2017-09-20_08_32_05-733298968952534843"
+}
+
+JOB_ID=${2?$(help)}
+VM_NAME="monitor-$(echo $JOB_ID | tr -s '_' '-')"
+
+case "$1" in
+  open)
+    gcloud compute ssh $VM_NAME -- -f -N -L3000:localhost:3000
+    while ! nc -z localhost 3000; do   
+      sleep 0.3
+    done
+    open http://localhost:3000
+    ;;
+  create)
+    shift 2
+    gcloud compute instances create $VM_NAME --image-family=cos-stable --image-project=cos-cloud --metadata-from-file=user-data=$DIR_OF_SCRIPT/../conf/cloud-config --scopes cloud-platform --machine-type=n1-standard-8 --boot-disk-size=500GB --metadata=job-id=$JOB_ID $@
+    sleep 10
+    $0 open $JOB_ID
+    ;;
+  delete)
+    shift 2
+    gcloud compute instances delete $VM_NAME $@
+    ;;
+  *)
+    help
+    ;;
+esac
