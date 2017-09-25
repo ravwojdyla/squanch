@@ -24,7 +24,7 @@ function fatal_error {
 }
 
 function help {
-  fatal_error "invalid command, use: $0 <create|delete> <job-id> \n\
+  fatal_error "invalid command, use: $0 <create|open|delete> <job-id> \n\
  example: $0 create 2017-09-20_08_32_05-733298968952534843"
 }
 
